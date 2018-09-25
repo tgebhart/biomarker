@@ -1,6 +1,7 @@
 import re
 from io import StringIO
 import pandas as pd
+import os.path
 
 def parse_x1(num, header=['Center Number', 'Atomic Number', 'Atomic Type', 'X', 'Y', 'Z']):
     # Extract the Standard Orientation
@@ -75,7 +76,8 @@ def parse_x3(num, header=["Atom Number", "Atom"]):
     header_expression = re.finditer(r"          Condensed to atoms \(all electrons\):", outtxt)
     
     # Use the second occurrence in the file.
-    header_expression = list(header_expression)[1]
+    # Some examples (like 228) only have a single occurrence, so use the final one.
+    header_expression = list(header_expression)[-1]
 
     header_end = int(header_expression.end())
 
@@ -118,8 +120,9 @@ def parse_x4(num, header=["Atom Number", "Electric Potential", "Val1", "Val2", "
     # Electric Field Gradient Eigenvalues
     header_expression = re.finditer(r"            Electrostatic Properties Using The SCF Density", outtxt)
     
-    # Use the second occurance in the file.
-    header_expression = list(header_expression)[1]
+    # Use the second occurrence in the file.
+    # Some examples (like 228) only have a single occurrence, so use the final one.
+    header_expression = list(header_expression)[-1]
 
     header_end = int(header_expression.end())
 
@@ -138,8 +141,9 @@ def parse_x5(num, header=["Atom Number", "Electric Potential", "X", "Y", "Z"]):
     # Electric Field Gradient Eigenvalues
     header_expression = re.finditer(r"    Center     Electric         -------- Electric Field --------\r\n               Potential          X             Y             Z", outtxt)
     
-    # Use the second occurance in the file.
-    header_expression = list(header_expression)[1]
+    # Use the second occurrence in the file.
+    # Some examples (like 228) only have a single occurrence, so use the final one.
+    header_expression = list(header_expression)[-1]
 
     header_end = int(header_expression.end())
 
@@ -161,7 +165,8 @@ def parse_x6(num):
         header_expression = re.finditer(r"    Center         ---- Electric Field Gradient ----\r\n                     " + group, outtxt)
         
         # Use the second occurrence  in the file.
-        header_expression = list(header_expression)[1]
+        # Some examples (like 228) only have a single occurrence, so use the final one.
+        header_expression = list(header_expression)[-1]
 
         # Get the ending position
         header_end = int(header_expression.end())
@@ -206,8 +211,8 @@ def parse_x8(num):
         outtxt = f.read()
 
     # Using a regular expression, find the number of data elements.
-    header_expression = re.search(r"Total SCF Density                          R   N=       (\d+)", outtxt)
-    num_elems = int(header_expression.group(1))
+    header_expression = re.search(r"Total SCF Density                          R   N=(\s)+(\d+)", outtxt)
+    num_elems = int(header_expression.group(2))
     header_end = int(header_expression.end())
 
     # Extract all the data elements
@@ -228,8 +233,8 @@ def parse_x9(num):
         outtxt = f.read()
 
     # Using a regular expression, find the number of data elements.
-    header_expression = re.search(r"Alpha MO coefficients                      R   N=       (\d+)", outtxt)
-    num_elems = int(header_expression.group(1))
+    header_expression = re.search(r"Alpha MO coefficients                      R   N=(\s)+(\d+)", outtxt)
+    num_elems = int(header_expression.group(2))
     header_end = int(header_expression.end())
 
     # Extract all the data elements
@@ -250,7 +255,8 @@ def parse_x10_through_x17(num):
     # Return the row for the data number
     # [u'Input', u'Key', u'Associated data', u'X10: Category Method', u'X11: Temperature (K)', u'X12: [Salt*Valency]', u'X13: Category Salt type', u'X14: [Buffer] (mM)', u'X15: pH', u'X16: CI #', u'X17: CI ', u'Unnamed: 11', u'Output: logK']
 
-    dfs = pd.read_excel("data/raw/x10_x17/X10_X17_WAVE2.xlsx", sheet_name=None)['COMPUTER SCIENTISTS LOOK HERE'].iloc[[num-1]]
+    dfs = pd.read_excel("data/raw/x10_x17/X10_X17_WAVE2.xlsx", sheet_name=None)['COMPUTER SCIENTISTS LOOK HERE']
+    dfs = dfs.loc[dfs[u'Input'] == num]
     return dfs
 
 
@@ -262,22 +268,26 @@ def create_data_item(num):
         "x1" :  parse_x1(num),
         "x2_occ" :  parse_x2(num)[0],
         "x2_virt" :  parse_x2(num)[1],
-        "x3" :  parse_x3(num),
+        "x3" :  parse_x3(num) if num != 358 and num != 381 else 0,
         "x4" :  parse_x4(num),
         "x5" :  parse_x5(num),
         "x6" :  parse_x6(num),
         "x7" :  parse_x7(num),
-        "x8" :  parse_x8(num),
+        "x8" :  parse_x8(num) if num != 228 and num != 391 else 0,
         "x9" :  parse_x9(num),
-        "x10": dfs_10_17['X10: Category Method'].iloc[0],
-        "x11": dfs_10_17['X11: Temperature (K)'].iloc[0],
-        "x12": dfs_10_17['X12: [Salt*Valency]'].iloc[0],
-        "x13": dfs_10_17['X13: Category Salt type'].iloc[0],
-        "x14": dfs_10_17['X14: [Buffer] (mM)'].iloc[0],
-        "x15": dfs_10_17['X15: pH'].iloc[0],
-        "x16": dfs_10_17['X16: CI #'].iloc[0],
-        "x17": dfs_10_17['X17: CI '].iloc[0],
-        "output": dfs_10_17['Output: logK'].iloc[0]
+        "x10": dfs_10_17['X10: Category Method'],
+        "x11": dfs_10_17['X11: Temperature (K)'],
+        "x12": dfs_10_17['X12: [Salt*Valency]'],
+        "x13": dfs_10_17['X13: Category Salt type'],
+        "x14": dfs_10_17['X14: [Buffer] (mM)'],
+        "x15": dfs_10_17['X15: pH'],
+        "x16": dfs_10_17['X16: CI #'],
+        "x17": dfs_10_17['X17: CI '],
+        "output": dfs_10_17['Output: logK']
     }
 
-    print(data_elements)
+
+for num in range(1,1000):
+    # Check if file exists
+    if os.path.isfile("data/raw/outs/" + str(num) + ".out") and os.path.isfile("data/raw/fchks/Anth_" + str(num) + ".fch"):
+        create_data_item(num)
