@@ -2,7 +2,6 @@ appnope==0.1.0
 backports-abc==0.5
 backports.functools-lru-cache==1.5
 backports.shutil-get-terminal-size==1.0.0
--e git+https://github.com/tgebhart/biomarker.git@e78aa906ea4815e42bdfabd0dcc215d85124421a#egg=biomarker
 bleach==2.1.4
 configparser==3.5.0
 cycler==0.10.0

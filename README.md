@@ -18,6 +18,13 @@ clone the repository then run
 $ pip install -r requirements.txt
 ```
 
+Also install the directory as a package so you can call functions and stuff
+without worrying about directory structure. From the root of the directory:
+
+```
+$ pip install -e .
+```
+
 The code is currently completely contained in the Jupyter notebook EDA.ipynb. To view/edit this notebook, run
 
 ```
