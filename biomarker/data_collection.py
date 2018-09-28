@@ -2,6 +2,9 @@ import re
 from io import StringIO
 import os
 import pandas as pd
+import numpy as np
+from sklearn import linear_model
+
 import os.path
 
 RAW_LOC = "../data/raw"
@@ -10,6 +13,8 @@ FCH_EXT = ".fch"
 OUT_LOC = os.path.join(RAW_LOC, "outs")
 FCH_LOC = os.path.join(RAW_LOC, "fchks")
 EXL_LOC = os.path.join(RAW_LOC, "X10_X17_WAVE2.xlsx")
+
+EXCLUDE_KEYS = [217, 216, 206, 205, 184, 183, 82, 81, 45]
 
 def read_out(loc, num, ext=OUT_EXT):
     with open(os.path.join(loc, str(num)+ext), "r") as f:
@@ -124,10 +129,10 @@ def parse_x3(num, header=["Atom Number", "Atom"], raw_loc=OUT_LOC):
             # Adjust starting block
             data_line_start = idx + 1
 
-    return pd.concat(dataframes, axis= 1)
+    return pd.concat(dataframes, axis= 1).dropna(axis=1)
 
 
-def parse_x4(num, header=["Atom Number", "Electric Potential", "Val1", "Val2", "Val3"], raw_loc=OUT_LOC):
+def parse_x4(num, header=["Val1", "Val2", "Val3"], raw_loc=OUT_LOC):
     # Electric Field Gradient, Eigenvalues
     outtxt = read_out(raw_loc, num)
 
@@ -144,10 +149,10 @@ def parse_x4(num, header=["Atom Number", "Electric Potential", "Val1", "Val2", "
     barrier_str = " **********************************************************************\r\n"
     leading_pos = outtxt.find(barrier_str, header_end)
     closing_pos = outtxt.find(" -----------------------------------------------------------------", leading_pos + len(barrier_str))
-    return pd.read_csv(StringIO(str(outtxt[leading_pos+len(barrier_str)+2:closing_pos-1]).decode('utf-8')), delim_whitespace=True, header=None, names=header)
+    return pd.read_csv(StringIO(str(outtxt[leading_pos+len(barrier_str)+2:closing_pos-1]).decode('utf-8')), delim_whitespace=True, header=None, names=header).reset_index()[header]
 
 
-def parse_x5(num, header=["Atom Number", "Electric Potential", "X", "Y", "Z"], raw_loc=OUT_LOC):
+def parse_x5(num, header=["Electric Potential", "X", "Y", "Z"], raw_loc=OUT_LOC):
     # Electric Field Gradient, Eigenvalues
     outtxt = read_out(raw_loc, num)
 
@@ -164,7 +169,7 @@ def parse_x5(num, header=["Atom Number", "Electric Potential", "X", "Y", "Z"], r
     barrier_str = " -----------------------------------------------------------------"
     leading_pos = outtxt.find(barrier_str, header_end)
     closing_pos = outtxt.find(barrier_str, leading_pos + len(barrier_str))
-    return pd.read_csv(StringIO(str(outtxt[leading_pos+len(barrier_str)+2:closing_pos-1]).decode('utf-8')), delim_whitespace=True, header=None, names=header)
+    return pd.read_csv(StringIO(str(outtxt[leading_pos+len(barrier_str)+2:closing_pos-1]).decode('utf-8')), delim_whitespace=True, header=None, names=header).reset_index()[header]
 
 
 def parse_x6(num, raw_loc=OUT_LOC):
@@ -197,7 +202,7 @@ def parse_x6(num, raw_loc=OUT_LOC):
     del df2["Atom Number"]
 
     # Return vertically concatenated dataframes
-    return pd.concat([df1, df2], axis= 1)
+    return pd.concat([df1, df2], axis= 1).iloc[:,1:]
 
 
 def parse_x7(num, header=["Atom Number", "Eigen 1", "Eigen 2", "Eigen 3"], raw_loc=OUT_LOC):
@@ -213,7 +218,7 @@ def parse_x7(num, header=["Atom Number", "Eigen 1", "Eigen 2", "Eigen 3"], raw_l
     leading_pos = outtxt.find(barrier_str, header_end)
     closing_pos = outtxt.find(barrier_str, leading_pos + len(barrier_str))
 
-    return pd.read_csv(StringIO(str(outtxt[leading_pos+len(barrier_str)+2:closing_pos-1]).decode('utf-8')), delim_whitespace=True, header=None, names=header)
+    return pd.read_csv(StringIO(str(outtxt[leading_pos+len(barrier_str)+2:closing_pos-1]).decode('utf-8')), delim_whitespace=True, header=None, names=header).iloc[:,1:]
 
 
 def parse_x8(num, raw_loc=FCH_LOC):
@@ -269,6 +274,102 @@ def parse_x10_through_x17(num, raw_loc=EXL_LOC):
     dfs = dfs.loc[dfs[u'Input'] == num]
     return dfs
 
+def parse_master_file(raw_loc=EXL_LOC, exclude_keys=EXCLUDE_KEYS):
+    ''' reads the master Excel file 'X10_X17_WAVE2.xlsx', drops rows where the
+    `Key` column is within the list `exclude_keys`, and returns a DataFrame.'''
+    df = pd.read_excel(raw_loc, sheet_name=None)['COMPUTER SCIENTISTS LOOK HERE']
+    return df[~df['Key'].isin(exclude_keys)]
+
+def get_filename_list(s):
+    ''' takes a list-like object `s` and returns the numbers after SB_.'''
+    return list(map(lambda x : x[3:], s))
+
+def get_dim_stats(l, f):
+    if len(l) < 1:
+        raise ValueError('l must be non-empty')
+
+    spot = f(l[0])
+    dim_counter = np.zeros(shape=(len(l), len(spot.shape)))
+    xs = []
+
+    for i in range(len(l)):
+        x = f(l[i])
+        dim_counter[i] = x.shape
+        xs.append(x)
+
+    return dim_counter, xs
+
+def create_x1_matrix(l):
+
+    dim_counter, xs = get_dim_stats(l, parse_x1)
+    # print dim_counter
+    mx = np.amax(dim_counter, axis=0)
+    max_rows = int(mx[0])
+    max_cols = int(mx[1])
+    res = np.zeros(shape=(len(l), max_rows*max_cols))
+    for i in range(len(xs)):
+        for j in range(max_cols):
+            res[i,max_rows*j:max_rows*j+xs[i].shape[0]] = xs[i].iloc[:,j].T
+
+    return res
+
+def create_x4_matrix(l):
+
+    dim_counter, xs = get_dim_stats(l, parse_x4)
+    # print dim_counter
+    mx = np.amax(dim_counter, axis=0)
+    max_rows = int(mx[0])
+    max_cols = int(mx[1])
+    res = np.zeros(shape=(len(l), max_rows*max_cols))
+    for i in range(len(xs)):
+        for j in range(max_cols):
+            res[i,max_rows*j:max_rows*j+xs[i].shape[0]] = xs[i].iloc[:,j].T
+
+    return res
+
+def create_x5_matrix(l):
+
+    dim_counter, xs = get_dim_stats(l, parse_x5)
+    # print dim_counter
+    mx = np.amax(dim_counter, axis=0)
+    max_rows = int(mx[0])
+    max_cols = int(mx[1])
+    res = np.zeros(shape=(len(l), max_rows*max_cols))
+    for i in range(len(xs)):
+        for j in range(max_cols):
+            res[i,max_rows*j:max_rows*j+xs[i].shape[0]] = xs[i].iloc[:,j].T
+
+    return res
+
+
+def create_x6_matrix(l):
+
+    dim_counter, xs = get_dim_stats(l, parse_x6)
+    # print dim_counter
+    mx = np.amax(dim_counter, axis=0)
+    max_rows = int(mx[0])
+    max_cols = int(mx[1])
+    res = np.zeros(shape=(len(l), max_rows*max_cols))
+    for i in range(len(xs)):
+        for j in range(max_cols):
+            res[i,max_rows*j:max_rows*j+xs[i].shape[0]] = xs[i].replace(to_replace="************", value=0.0).iloc[:,j].T
+
+    return res
+
+
+def create_x7_matrix(l):
+
+    dim_counter, xs = get_dim_stats(l, parse_x7)
+    # print dim_counter
+    mx = np.amax(dim_counter, axis=0)
+    max_rows = int(mx[0])
+    max_cols = int(mx[1])
+    res = np.zeros(shape=(len(l), max_rows*max_cols))
+    for i in range(len(xs)):
+        for j in range(max_cols):
+            res[i,max_rows*j:max_rows*j+xs[i].shape[0]] = xs[i].replace(to_replace="************", value=0.0).iloc[:,j].T
+
+    return res
 
 def create_data_item(num, exclude=[358,381], out_loc=OUT_LOC, excel_loc=EXL_LOC,
                     fch_loc=FCH_LOC):
@@ -298,6 +399,49 @@ def create_data_item(num, exclude=[358,381], out_loc=OUT_LOC, excel_loc=EXL_LOC,
     }
 
     return data_elements
+
+
+def prepare_master(master):
+
+    print master.shape
+
+    x10 = pd.get_dummies(master.iloc[:,0])
+    mask = x10['D, B, A'] == 1
+    x10.loc[mask,:] = [1, 1, 0, 1, 1]
+    x10 = x10.drop(['D, B, A'], axis=1, inplace=False)
+
+    x11 = master.iloc[:,1]
+    x11 = x11.fillna(value=298)
+
+    x12 = master.iloc[:,2]
+    x12 = x12.fillna(value=0)
+
+    x13 = master.iloc[:,3]
+    x13.fillna(value=0)
+    x13 = pd.get_dummies(x13)
+
+    x14 = master.iloc[:,4]
+    x14 = x14.fillna(value=0)
+
+    x15 = master.iloc[:,5]
+    x15 = x15.fillna(value=7.0)
+
+    x16 = master.iloc[:,6]
+    x16.fillna(value=0)
+    x16 = pd.get_dummies(x16)
+
+    x17 = master.iloc[:,7]
+    x17.fillna(value='N')
+    x17 = pd.get_dummies(x17)
+
+    return np.column_stack((x10.values, x11.values, x12.values, x13.values, x14.values, x15.values, x16.values, x17.values))
+
+
+def linear_regression_approx(x, y):
+    regr = linear_model.LinearRegression()
+    regr.fit(x, y)
+    x1_approx = regr.predict(x)
+    return x1_approx
 
 
 # for num in range(1,1000):

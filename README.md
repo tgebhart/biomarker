@@ -1,11 +1,12 @@
 # Biomarker
 
-Machine learning for biomarker detection data. 
+Machine learning for biomarker detection data.
 
 ### Requirements:
 
-python 3+
+python 2
 pandas
+sklearn
 numpy
 jupyter
 
@@ -25,7 +26,7 @@ $ jupyter notebook
 
 This should open a browser tab with the file directory. Navigate to `notebooks/EDA.ipynb` to view/edit the file.
 
-I have also created an HTML copy of the file in the same directory that can be used to view the code without 
+I have also created an HTML copy of the file in the same directory that can be used to view the code without
 following the previous steps.
 
 ## To Do:
@@ -33,4 +34,4 @@ following the previous steps.
 * Run algorithm on easily-matrixed portion of data
 * Report results on above analysis
 * Determine best way to convert all data into matrix/algorithm-interpretable format
-* etc. 
+* etc.
