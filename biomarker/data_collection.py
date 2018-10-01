@@ -3,7 +3,9 @@ from io import StringIO
 import os
 import pandas as pd
 import numpy as np
+
 from sklearn import linear_model
+from sklearn.tree import DecisionTreeRegressor
 
 import os.path
 
@@ -403,8 +405,6 @@ def create_data_item(num, exclude=[358,381], out_loc=OUT_LOC, excel_loc=EXL_LOC,
 
 def prepare_master(master):
 
-    print master.shape
-
     x10 = pd.get_dummies(master.iloc[:,0])
     mask = x10['D, B, A'] == 1
     x10.loc[mask,:] = [1, 1, 0, 1, 1]
@@ -417,7 +417,7 @@ def prepare_master(master):
     x12 = x12.fillna(value=0)
 
     x13 = master.iloc[:,3]
-    x13.fillna(value=0)
+    x13 = x13.fillna(value=0)
     x13 = pd.get_dummies(x13)
 
     x14 = master.iloc[:,4]
@@ -427,21 +427,31 @@ def prepare_master(master):
     x15 = x15.fillna(value=7.0)
 
     x16 = master.iloc[:,6]
-    x16.fillna(value=0)
+    x16 = x16.fillna(value=0)
     x16 = pd.get_dummies(x16)
 
     x17 = master.iloc[:,7]
-    x17.fillna(value='N')
+    x17 = x17.fillna(value='N')
+    x17 = x17.replace(to_replace=' ', value='N')
     x17 = pd.get_dummies(x17)
 
-    return np.column_stack((x10.values, x11.values, x12.values, x13.values, x14.values, x15.values, x16.values, x17.values))
+    names = [x10.columns.values, [x11.name], [x12.name], x13.columns.values, [x14.name], [x15.name], x16.columns.values, x17.columns.values]
+    flat_names = [val for sublist in names for val in sublist]
+
+    return np.column_stack((x10.values, x11.values, x12.values, x13.values, x14.values, x15.values, x16.values, x17.values)), flat_names
 
 
 def linear_regression_approx(x, y):
     regr = linear_model.LinearRegression()
     regr.fit(x, y)
-    x1_approx = regr.predict(x)
-    return x1_approx
+    x_approx = regr.predict(x)
+    return x_approx
+
+def regression_tree_approx(x,y, max_depth=3):
+    regr = DecisionTreeRegressor(max_depth=max_depth)
+    regr.fit(x, y)
+    x_approx = regr.predict(x)
+    return x_approx
 
 
 # for num in range(1,1000):
