@@ -406,9 +406,10 @@ def create_data_item(num, exclude=[358,381], out_loc=OUT_LOC, excel_loc=EXL_LOC,
 def prepare_master(master):
 
     x10 = pd.get_dummies(master.iloc[:,0])
-    mask = x10['D, B, A'] == 1
-    x10.loc[mask,:] = [1, 1, 0, 1, 1]
-    x10 = x10.drop(['D, B, A'], axis=1, inplace=False)
+    if 'D, B, A' in x10.columns:
+        mask = x10['D, B, A'] == 1
+        x10.loc[mask,:] = [1, 1, 0, 1, 1]
+        x10 = x10.drop(['D, B, A'], axis=1, inplace=False)
 
     x11 = master.iloc[:,1]
     x11 = x11.fillna(value=298)
@@ -445,13 +446,28 @@ def linear_regression_approx(x, y):
     regr = linear_model.LinearRegression()
     regr.fit(x, y)
     x_approx = regr.predict(x)
-    return x_approx
+    return x_approx, regr
 
-def regression_tree_approx(x,y, max_depth=3):
+def regression_tree_approx(x,y, max_depth=2):
     regr = DecisionTreeRegressor(max_depth=max_depth)
     regr.fit(x, y)
     x_approx = regr.predict(x)
-    return x_approx
+    return x_approx, regr
+
+def duplicate_master(master, threshold, times, how='lt', col_name='Output: logK'):
+    if how == 'lt':
+        to_dup = master[master[col_name] < threshold]
+    elif how == 'gt':
+        to_dup = master[master[col_name] > threshold]
+    else:
+        raise ValueError("please choose correct threshold comparator ('gt' or 'lt')")
+
+    print 'to dup: ', to_dup.shape
+    for i in range(times):
+        master = pd.concat([master, to_dup], axis=0)
+
+    return master
+
 
 
 # for num in range(1,1000):

@@ -5,11 +5,12 @@ from biomarker.data_collection import *
 import numpy as np
 
 from sklearn import linear_model
+from sklearn.tree import DecisionTreeRegressor
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.decomposition import PCA
 
 
-def ensemble(num_test, seed=1, regressor='tree'):
+def ensemble(num_test, seed=1, regressor='tree', meta_model='linear', max_depth=3):
     np.random.seed(seed)
 
     excel = parse_master_file()
@@ -37,44 +38,49 @@ def ensemble(num_test, seed=1, regressor='tree'):
 
     if regressor == 'linear':
 
-        x1_approx_train = linear_regression_approx(x1[train_idxs], y_train)
-        x4_approx_train = linear_regression_approx(x4[train_idxs], y_train)
-        x5_approx_train = linear_regression_approx(x5[train_idxs], y_train)
-        x6_approx_train = linear_regression_approx(x6[train_idxs], y_train)
-        x7_approx_train = linear_regression_approx(x7[train_idxs], y_train)
+        x1_approx_train,_ = linear_regression_approx(x1[train_idxs], y_train)
+        x4_approx_train,_ = linear_regression_approx(x4[train_idxs], y_train)
+        x5_approx_train,_ = linear_regression_approx(x5[train_idxs], y_train)
+        x6_approx_train,_ = linear_regression_approx(x6[train_idxs], y_train)
+        x7_approx_train,_ = linear_regression_approx(x7[train_idxs], y_train)
 
-        x1_approx_test = linear_regression_approx(x1[test_idxs], y_test)
-        x4_approx_test = linear_regression_approx(x4[test_idxs], y_test)
-        x5_approx_test = linear_regression_approx(x5[test_idxs], y_test)
-        x6_approx_test = linear_regression_approx(x6[test_idxs], y_test)
-        x7_approx_test = linear_regression_approx(x7[test_idxs], y_test)
+        x1_approx_test,_ = linear_regression_approx(x1[test_idxs], y_test)
+        x4_approx_test,_ = linear_regression_approx(x4[test_idxs], y_test)
+        x5_approx_test,_ = linear_regression_approx(x5[test_idxs], y_test)
+        x6_approx_test,_ = linear_regression_approx(x6[test_idxs], y_test)
+        x7_approx_test,_ = linear_regression_approx(x7[test_idxs], y_test)
 
-    if regressor == 'tree':
+    elif regressor == 'tree':
 
-        x1_approx_train = regression_tree_approx(x1[train_idxs], y_train)
-        x4_approx_train = regression_tree_approx(x4[train_idxs], y_train)
-        x5_approx_train = regression_tree_approx(x5[train_idxs], y_train)
-        x6_approx_train = regression_tree_approx(x6[train_idxs], y_train)
-        x7_approx_train = regression_tree_approx(x7[train_idxs], y_train)
+        x1_approx_train,_ = regression_tree_approx(x1[train_idxs], y_train)
+        x4_approx_train,_ = regression_tree_approx(x4[train_idxs], y_train)
+        x5_approx_train,_ = regression_tree_approx(x5[train_idxs], y_train)
+        x6_approx_train,_ = regression_tree_approx(x6[train_idxs], y_train)
+        x7_approx_train,_ = regression_tree_approx(x7[train_idxs], y_train)
 
-        x1_approx_test = regression_tree_approx(x1[test_idxs], y_test)
-        x4_approx_test = regression_tree_approx(x4[test_idxs], y_test)
-        x5_approx_test = regression_tree_approx(x5[test_idxs], y_test)
-        x6_approx_test = regression_tree_approx(x6[test_idxs], y_test)
-        x7_approx_test = regression_tree_approx(x7[test_idxs], y_test)
+        x1_approx_test,_ = regression_tree_approx(x1[test_idxs], y_test)
+        x4_approx_test,_ = regression_tree_approx(x4[test_idxs], y_test)
+        x5_approx_test,_ = regression_tree_approx(x5[test_idxs], y_test)
+        x6_approx_test,_ = regression_tree_approx(x6[test_idxs], y_test)
+        x7_approx_test,_ = regression_tree_approx(x7[test_idxs], y_test)
 
     else:
-        raise AttributeError('please choose appropriate regressor type')
+        raise ValueError('please choose appropriate regressor type')
 
 
-    regr = linear_model.LinearRegression()
+    if meta_model == 'linear':
+        regr = linear_model.LinearRegression()
+    if meta_model == 'tree':
+        regr = DecisionTreeRegressor(max_depth=max_depth)
+    else:
+        raise ValueError('please choose appropriate meta model')
+
     all_xs_train = np.column_stack((x1_approx_train, x4_approx_train, x5_approx_train, x6_approx_train, x7_approx_train, master_train))
     regr.fit(all_xs_train, y_train)
 
     all_xs_test = np.column_stack((x1_approx_test, x4_approx_test, x5_approx_test, x6_approx_test, x7_approx_test, master_test))
     predictions = regr.predict(all_xs_test)
 
-    print('Coefficients: \n', regr.coef_)
     mse = mean_squared_error(y_test, predictions)
     r_squared = r2_score(y_test, predictions)
     # The mean squared error
@@ -82,7 +88,12 @@ def ensemble(num_test, seed=1, regressor='tree'):
     # Explained variance score: 1 is perfect prediction
     print('Variance score: %.2f' % r_squared)
 
-    return mse, r_squared, regr.coef_, regr
+    if meta_model == 'linear':
+        print('Coefficients: \n', regr.coef_)
+        return mse, r_squared, regr.coef_, regr
+    else:
+        return mse, r_squared, None, regr
+
 
 
 
