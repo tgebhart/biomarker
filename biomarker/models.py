@@ -10,7 +10,6 @@ from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.decomposition import PCA
 
 
-
 class Ensemble(object):
 
     def __init__(self, seed=1, regressor='tree', meta_model='linear', max_depth=2):
