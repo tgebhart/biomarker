@@ -1,27 +1,35 @@
 import os
 
 import pandas as pd
-from biomarker.data_collection import *
+from data_collection import *
 import numpy as np
 
 from sklearn import linear_model
-from sklearn.tree import DecisionTreeRegressor
+from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.decomposition import PCA
+from sklearn.svm import LinearSVC
+from sklearn.svm import SVC
 
-
-
+print('models')
 class Ensemble(object):
 
-    def __init__(self, seed=1, regressor='tree', meta_model='linear', max_depth=2):
+    def __init__(self, seed=1, regressor='tree', meta_model='linear', var_classification= True, meta_classification= True, max_depth=2):
 
         np.random.seed(seed)
         self.regressor = regressor
-
+        self.var_classification = var_classification
+        self.meta_classification = meta_classification
         if meta_model == 'linear':
-            self.regr = linear_model.LinearRegression()
+            if self.meta_classification:
+                self.regr = SVC(kernel="linear")
+            else:
+                self.regr = linear_model.LinearRegression()
         elif meta_model == 'tree':
-            self.regr = DecisionTreeRegressor(max_depth=max_depth)
+            if self.meta_classification:
+                self.regr = DecisionTreeClassifier(max_depth=max_depth)
+            else:   
+                self.regr = DecisionTreeRegressor(max_depth=max_depth)
         else:
             raise ValueError('please input acceptable meta_model')
 
@@ -50,20 +58,32 @@ class Ensemble(object):
         self.master = master
 
         if self.regressor == 'linear':
-
-            self.x1_approx,self.x1_regr = linear_regression_approx(x1, y)
-            self.x4_approx,self.x4_regr = linear_regression_approx(x4, y)
-            self.x5_approx,self.x5_regr = linear_regression_approx(x5, y)
-            self.x6_approx,self.x6_regr = linear_regression_approx(x6, y)
-            self.x7_approx,self.x7_regr = linear_regression_approx(x7, y)
+            if self.var_classification:
+                self.x1_approx,self.x1_regr = linear_classification_approx(x1, y)
+                self.x4_approx,self.x4_regr = linear_classification_approx(x4, y)
+                self.x5_approx,self.x5_regr = linear_classification_approx(x5, y)
+                self.x6_approx,self.x6_regr = linear_classification_approx(x6, y)
+                self.x7_approx,self.x7_regr = linear_classification_approx(x7, y)
+            else:
+                self.x1_approx,self.x1_regr = linear_regression_approx(x1, y)
+                self.x4_approx,self.x4_regr = linear_regression_approx(x4, y)
+                self.x5_approx,self.x5_regr = linear_regression_approx(x5, y)
+                self.x6_approx,self.x6_regr = linear_regression_approx(x6, y)
+                self.x7_approx,self.x7_regr = linear_regression_approx(x7, y)
 
         elif self.regressor == 'tree':
-
-            self.x1_approx,self.x1_regr = regression_tree_approx(x1, y, max_depth=max_depth)
-            self.x4_approx,self.x4_regr = regression_tree_approx(x4, y, max_depth=max_depth)
-            self.x5_approx,self.x5_regr = regression_tree_approx(x5, y, max_depth=max_depth)
-            self.x6_approx,self.x6_regr = regression_tree_approx(x6, y, max_depth=max_depth)
-            self.x7_approx,self.x7_regr = regression_tree_approx(x7, y, max_depth=max_depth)
+            if self.var_classification:
+                self.x1_approx,self.x1_regr = decision_tree_approx(x1, y, max_depth=max_depth)
+                self.x4_approx,self.x4_regr = decision_tree_approx(x4, y, max_depth=max_depth)
+                self.x5_approx,self.x5_regr = decision_tree_approx(x5, y, max_depth=max_depth)
+                self.x6_approx,self.x6_regr = decision_tree_approx(x6, y, max_depth=max_depth)
+                self.x7_approx,self.x7_regr = decision_tree_approx(x7, y, max_depth=max_depth)
+            else:
+                self.x1_approx,self.x1_regr = regression_tree_approx(x1, y, max_depth=max_depth)
+                self.x4_approx,self.x4_regr = regression_tree_approx(x4, y, max_depth=max_depth)
+                self.x5_approx,self.x5_regr = regression_tree_approx(x5, y, max_depth=max_depth)
+                self.x6_approx,self.x6_regr = regression_tree_approx(x6, y, max_depth=max_depth)
+                self.x7_approx,self.x7_regr = regression_tree_approx(x7, y, max_depth=max_depth)
 
         else:
             raise ValueError('Please set regressor to appropriate type')
