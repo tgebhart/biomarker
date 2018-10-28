@@ -11,11 +11,6 @@ from sklearn.decomposition import PCA
 from sklearn.svm import LinearSVC
 from sklearn.svm import SVC
 
-<<<<<<< HEAD
-
-=======
-print('models')
->>>>>>> 4d3bcdb9b5cd0f54d27a81cc6ecabd3ce2129cee
 class Ensemble(object):
 
     def __init__(self, seed=1, regressor='tree', meta_model='linear', var_classification= True, meta_classification= True, max_depth=2):
@@ -32,7 +27,7 @@ class Ensemble(object):
         elif meta_model == 'tree':
             if self.meta_classification:
                 self.regr = DecisionTreeClassifier(max_depth=max_depth)
-            else:   
+            else:
                 self.regr = DecisionTreeRegressor(max_depth=max_depth)
         else:
             raise ValueError('please input acceptable meta_model')
