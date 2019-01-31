@@ -20,14 +20,13 @@ from sklearn.svm import SVC
 import os.path
 
 print('data_collection')
-RAW_LOC = "./data/raw"
+RAW_LOC = "../data/raw"
 OUT_EXT = ".out"
 FCH_EXT = ".fch"
 OUT_LOC = os.path.join(RAW_LOC, "outs")
 FCH_LOC = os.path.join(RAW_LOC, "fchks")
-# EXL_LOC = os.path.join(RAW_LOC, "/X10_X17_WAVE2.xlsx")
-EXL_LOC = r".\data\raw\X10_X17_WAVE2.xlsx"
-# print(EXL_LOC,"YO")
+EXL_LOC = os.path.join(RAW_LOC, "X10_X17_WAVE2.xlsx")
+# EXL_LOC = r".\data\raw\X10_X17_WAVE2.xlsx"
 EXCLUDE_KEYS = [217, 216, 206, 205, 184, 183, 82, 81, 45]
 
 def read_out(loc, num, ext=OUT_EXT):
@@ -63,6 +62,8 @@ def parse_x1(num, header=['Center Number', 'Atomic Number', 'Atomic Type', 'X', 
     # Create final data frame & remove atomic type column.
     df = pd.DataFrame(values, columns=header)
     df = df.drop(columns=['Atomic Type'])
+
+    df[df.columns] = df[df.columns].apply(pd.to_numeric)
 
     return df
 
@@ -301,13 +302,13 @@ def bucket(val,cutoffs):
 def parse_master_file(raw_loc=EXL_LOC, exclude_keys=EXCLUDE_KEYS):
     ''' reads the master Excel file 'X10_X17_WAVE2.xlsx', drops rows where the
     `Key` column is within the list `exclude_keys`, and returns a DataFrame.'''
-    
+
 
     df = pd.read_excel(raw_loc, sheet_name=None)['COMPUTER SCIENTISTS LOOK HERE']
     cutoffs = [3,9]
     print(cutoffs)
     df['Output: logKbucket']=df['Output: logK'].apply(lambda x: bucket(x,cutoffs))
-    return df[~df['Key'].isin(exclude_keys)]
+    return df[~df['Key'].isin(exclude_keys)].reset_index(drop=True)
 # def parse_x1(num, header=['Center Number', 'Atomic Number', 'Atomic Type', 'X', 'Y', 'Z'], raw_loc=OUT_LOC):
 #     # Extract the Standard Orientation
 
@@ -607,76 +608,101 @@ def get_dim_stats(l, f):
             xs.append(x)
 
     return dim_counter, xs
-def create_x1_matrix(l):
 
+def create_x1_matrix(l, max_dims=None, return_dims=False):
     dim_counter, xs = get_dim_stats(l, parse_x1)
-    # print dim_counter
-    mx = np.amax(dim_counter, axis=0)
-    max_rows = int(mx[0])
-    max_cols = int(mx[1])
+    if max_dims is None:
+        # print dim_counter
+        mx = np.amax(dim_counter, axis=0)
+        max_rows = int(mx[0])
+        max_cols = int(mx[1])
+    else:
+        max_rows = max_dims[0]
+        max_cols = max_dims[1]
     res = np.zeros(shape=(len(l), max_rows*max_cols))
     for i in range(len(xs)):
         for j in range(max_cols):
             res[i,max_rows*j:max_rows*j+xs[i].shape[0]] = xs[i].iloc[:,j].T
-
+    if return_dims:
+        return res, (max_rows, max_cols)
     return res
 
-def create_x4_matrix(l):
+def create_x4_matrix(l, max_dims=None, return_dims=False):
 
     dim_counter, xs = get_dim_stats(l, parse_x4)
-    # print dim_counter
-    mx = np.amax(dim_counter, axis=0)
-    max_rows = int(mx[0])
-    max_cols = int(mx[1])
+    if max_dims is None:
+        # print dim_counter
+        mx = np.amax(dim_counter, axis=0)
+        max_rows = int(mx[0])
+        max_cols = int(mx[1])
+    else:
+        max_rows = max_dims[0]
+        max_cols = max_dims[1]
     res = np.zeros(shape=(len(l), max_rows*max_cols))
     for i in range(len(xs)):
         for j in range(max_cols):
             res[i,max_rows*j:max_rows*j+xs[i].shape[0]] = xs[i].iloc[:,j].T
-
+    if return_dims:
+        return res, (max_rows, max_cols)
     return res
 
-def create_x5_matrix(l):
+def create_x5_matrix(l, max_dims=None, return_dims=False):
 
     dim_counter, xs = get_dim_stats(l, parse_x5)
-    # print dim_counter
-    mx = np.amax(dim_counter, axis=0)
-    max_rows = int(mx[0])
-    max_cols = int(mx[1])
+    if max_dims is None:
+        # print dim_counter
+        mx = np.amax(dim_counter, axis=0)
+        max_rows = int(mx[0])
+        max_cols = int(mx[1])
+    else:
+        max_rows = max_dims[0]
+        max_cols = max_dims[1]
     res = np.zeros(shape=(len(l), max_rows*max_cols))
     for i in range(len(xs)):
         for j in range(max_cols):
             res[i,max_rows*j:max_rows*j+xs[i].shape[0]] = xs[i].iloc[:,j].T
-
+    if return_dims:
+        return res, (max_rows, max_cols)
     return res
 
 
-def create_x6_matrix(l):
+def create_x6_matrix(l, max_dims=None, return_dims=False):
 
     dim_counter, xs = get_dim_stats(l, parse_x6)
-    # print dim_counter
-    mx = np.amax(dim_counter, axis=0)
-    max_rows = int(mx[0])
-    max_cols = int(mx[1])
+    if max_dims is None:
+        # print dim_counter
+        mx = np.amax(dim_counter, axis=0)
+        max_rows = int(mx[0])
+        max_cols = int(mx[1])
+    else:
+        max_rows = max_dims[0]
+        max_cols = max_dims[1]
     res = np.zeros(shape=(len(l), max_rows*max_cols))
     for i in range(len(xs)):
         for j in range(max_cols):
             res[i,max_rows*j:max_rows*j+xs[i].shape[0]] = xs[i].replace(to_replace="************", value=0.0).iloc[:,j].T
-
+    if return_dims:
+        return res, (max_rows, max_cols)
     return res
 
 
-def create_x7_matrix(l):
+def create_x7_matrix(l, max_dims=None, return_dims=False):
 
     dim_counter, xs = get_dim_stats(l, parse_x7)
-    # print dim_counter
-    mx = np.amax(dim_counter, axis=0)
-    max_rows = int(mx[0])
-    max_cols = int(mx[1])
+    if max_dims is None:
+        # print dim_counter
+        mx = np.amax(dim_counter, axis=0)
+        max_rows = int(mx[0])
+        max_cols = int(mx[1])
+    else:
+        max_rows = max_dims[0]
+        max_cols = max_dims[1]
     res = np.zeros(shape=(len(l), max_rows*max_cols))
     for i in range(len(xs)):
         for j in range(max_cols):
             res[i,max_rows*j:max_rows*j+xs[i].shape[0]] = xs[i].replace(to_replace="************", value=0.0).iloc[:,j].T
-
+    if return_dims:
+        return res, (max_rows, max_cols)
     return res
 
 def create_data_item(num, exclude=[358,381], out_loc=OUT_LOC, excel_loc=EXL_LOC,
@@ -734,7 +760,7 @@ def prepare_master(master):
     x15 = x15.fillna(value=7.0)
 
     x16 = master.iloc[:,6]
-    x16 = x16.fillna(value=0) 
+    x16 = x16.fillna(value=0)
     x16 = pd.get_dummies(x16)
 
     x17 = master.iloc[:,7]
@@ -764,7 +790,7 @@ def regression_tree_approx(x,y, max_depth=2):
     regr.fit(x, y)
     x_approx = regr.predict(x)
     return x_approx, regr
-def decision_tree_approx(x,y, max_depth=2): 
+def decision_tree_approx(x,y, max_depth=2):
     regr = DecisionTreeClassifier(max_depth=max_depth)
     # regr = DecisionTreeClassifier(class_weight = {0: 2, 1: 1,2:1},max_depth=max_depth)
     regr.fit(x, y)
@@ -1011,11 +1037,11 @@ def duplicate_master(master, threshold, times, how='lt', col_name='Output: logK'
 #         master = pd.concat([master, to_dup], axis=0)
 
 #     return master
-            
+
 
 
 # def test_901902(trees,coeffs,ohone,ohtwo):
-    
+
 # for num in range(1,1000):
 #     # Check if file exists
 #     if os.path.isfile("data/raw/outs/" + str(num) + ".out") and os.path.isfile("data/raw/fchks/Anth_" + str(num) + ".fch"):

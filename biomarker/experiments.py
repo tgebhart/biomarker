@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-from data_collection import *
+from biomarker.data_collection import *
 import numpy as np
 from sklearn import linear_model
 from sklearn.tree import DecisionTreeRegressor
@@ -40,57 +40,57 @@ def ensemble(num_test, seed=1, regressor='tree', meta_model='linear', var_classi
 
     if regressor == 'linear':
         if var_classification:
-            x1_approx_train,_ = linear_classification_approx(x1[train_idxs], y_train)
-            x4_approx_train,_ = linear_classification_approx(x4[train_idxs], y_train)
-            x5_approx_train,_ = linear_classification_approx(x5[train_idxs], y_train)
-            x6_approx_train,_ = linear_classification_approx(x6[train_idxs], y_train)
-            x7_approx_train,_ = linear_classification_approx(x7[train_idxs], y_train)
+            x1_approx_train,x1_model = linear_classification_approx(x1[train_idxs], y_train)
+            x4_approx_train,x4_model = linear_classification_approx(x4[train_idxs], y_train)
+            x5_approx_train,x5_model = linear_classification_approx(x5[train_idxs], y_train)
+            x6_approx_train,x6_model = linear_classification_approx(x6[train_idxs], y_train)
+            x7_approx_train,x7_model = linear_classification_approx(x7[train_idxs], y_train)
 
-            x1_approx_test,_ = linear_classification_approx(x1[test_idxs], y_test)
-            x4_approx_test,_ = linear_classification_approx(x4[test_idxs], y_test)
-            x5_approx_test,_ = linear_classification_approx(x5[test_idxs], y_test)
-            x6_approx_test,_ = linear_classification_approx(x6[test_idxs], y_test)
-            x7_approx_test,_ = linear_classification_approx(x7[test_idxs], y_test)
+            x1_approx_test = x1_model.predict(x1[test_idxs])
+            x4_approx_test = x4_model.predict(x4[test_idxs])
+            x5_approx_test = x5_model.predict(x5[test_idxs])
+            x6_approx_test = x6_model.predict(x6[test_idxs])
+            x7_approx_test = x7_model.predict(x7[test_idxs])
         else:
-            x1_approx_train,_ = linear_regression_approx(x1[train_idxs], y_train)
-            x4_approx_train,_ = linear_regression_approx(x4[train_idxs], y_train)
-            x5_approx_train,_ = linear_regression_approx(x5[train_idxs], y_train)
-            x6_approx_train,_ = linear_regression_approx(x6[train_idxs], y_train)
-            x7_approx_train,_ = linear_regression_approx(x7[train_idxs], y_train)
+            x1_approx_train,x1_model = linear_regression_approx(x1[train_idxs], y_train)
+            x4_approx_train,x4_model = linear_regression_approx(x4[train_idxs], y_train)
+            x5_approx_train,x5_model = linear_regression_approx(x5[train_idxs], y_train)
+            x6_approx_train,x6_model = linear_regression_approx(x6[train_idxs], y_train)
+            x7_approx_train,x7_model = linear_regression_approx(x7[train_idxs], y_train)
 
-            x1_approx_test,_ = linear_regression_approx(x1[test_idxs], y_test)
-            x4_approx_test,_ = linear_regression_approx(x4[test_idxs], y_test)
-            x5_approx_test,_ = linear_regression_approx(x5[test_idxs], y_test)
-            x6_approx_test,_ = linear_regression_approx(x6[test_idxs], y_test)
-            x7_approx_test,_ = linear_regression_approx(x7[test_idxs], y_test)
-        
-        
+            x1_approx_test = x1_model.predict(x1[test_idxs])
+            x4_approx_test = x4_model.predict(x4[test_idxs])
+            x5_approx_test = x5_model.predict(x5[test_idxs])
+            x6_approx_test = x6_model.predict(x6[test_idxs])
+            x7_approx_test = x7_model.predict(x7[test_idxs])
+
+
 
     elif regressor == 'tree':
         if var_classification:
-            x1_approx_train,_ = decision_tree_approx(x1[train_idxs], y_train)
-            x4_approx_train,_ = decision_tree_approx(x4[train_idxs], y_train)
-            x5_approx_train,_ = decision_tree_approx(x5[train_idxs], y_train)
-            x6_approx_train,_ = decision_tree_approx(x6[train_idxs], y_train)
-            x7_approx_train,_ = decision_tree_approx(x7[train_idxs], y_train)
+            x1_approx_train,x1_model = decision_tree_approx(x1[train_idxs], y_train)
+            x4_approx_train,x4_model = decision_tree_approx(x4[train_idxs], y_train)
+            x5_approx_train,x5_model = decision_tree_approx(x5[train_idxs], y_train)
+            x6_approx_train,x6_model = decision_tree_approx(x6[train_idxs], y_train)
+            x7_approx_train,x7_model = decision_tree_approx(x7[train_idxs], y_train)
 
-            x1_approx_test,_ = decision_tree_approx(x1[test_idxs], y_test)
-            x4_approx_test,_ = decision_tree_approx(x4[test_idxs], y_test)
-            x5_approx_test,_ = decision_tree_approx(x5[test_idxs], y_test)
-            x6_approx_test,_ = decision_tree_approx(x6[test_idxs], y_test)
-            x7_approx_test,_ = decision_tree_approx(x7[test_idxs], y_test)
+            x1_approx_test = x1_model.predict(x1[test_idxs])
+            x4_approx_test = x4_model.predict(x4[test_idxs])
+            x5_approx_test = x5_model.predict(x5[test_idxs])
+            x6_approx_test = x6_model.predict(x6[test_idxs])
+            x7_approx_test = x7_model.predict(x7[test_idxs])
         else:
-            x1_approx_train,_ = regression_tree_approx(x1[train_idxs], y_train)
-            x4_approx_train,_ = regression_tree_approx(x4[train_idxs], y_train)
-            x5_approx_train,_ = regression_tree_approx(x5[train_idxs], y_train)
-            x6_approx_train,_ = regression_tree_approx(x6[train_idxs], y_train)
-            x7_approx_train,_ = regression_tree_approx(x7[train_idxs], y_train)
+            x1_approx_train,x1_model = regression_tree_approx(x1[train_idxs], y_train)
+            x4_approx_train,x4_model = regression_tree_approx(x4[train_idxs], y_train)
+            x5_approx_train,x5_model = regression_tree_approx(x5[train_idxs], y_train)
+            x6_approx_train,x6_model = regression_tree_approx(x6[train_idxs], y_train)
+            x7_approx_train,x7_model = regression_tree_approx(x7[train_idxs], y_train)
 
-            x1_approx_test,_ = regression_tree_approx(x1[test_idxs], y_test)
-            x4_approx_test,_ = regression_tree_approx(x4[test_idxs], y_test)
-            x5_approx_test,_ = regression_tree_approx(x5[test_idxs], y_test)
-            x6_approx_test,_ = regression_tree_approx(x6[test_idxs], y_test)
-            x7_approx_test,_ = regression_tree_approx(x7[test_idxs], y_test)
+            x1_approx_test = x1_model.predict(x1[test_idxs])
+            x4_approx_test = x4_model.predict(x4[test_idxs])
+            x5_approx_test = x5_model.predict(x5[test_idxs])
+            x6_approx_test = x6_model.predict(x6[test_idxs])
+            x7_approx_test = x7_model.predict(x7[test_idxs])
     else:
         raise ValueError('please choose appropriate regressor type')
 
@@ -104,13 +104,13 @@ def ensemble(num_test, seed=1, regressor='tree', meta_model='linear', var_classi
         else:
             regr = linear_model.LinearRegression()
     elif meta_model == 'tree':
-        if meta_classification:    
+        if meta_classification:
             regr = DecisionTreeClassifier(max_depth=max_depth)
         else:
             regr = DecisionTreeRegressor(max_depth=max_depth)
     else:
         raise ValueError('please choose appropriate meta model')
-        
+
     all_xs_train = np.column_stack((x1_approx_train, x4_approx_train, x5_approx_train, x6_approx_train, x7_approx_train, master_train))
     regr.fit(all_xs_train, y_train)
 
