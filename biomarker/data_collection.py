@@ -115,10 +115,9 @@ def parse_x3(num, header=["Atom Number", "Atom"], raw_loc=OUT_LOC):
     header_expression = list(header_expression)[-1]
 
     header_end = int(header_expression.end())
-
     # Find leading and closing barrier
-    leading_pos = outtxt.find("\r\n", header_end)
-    closing_pos = outtxt.find(" Mulliken charges:", leading_pos)
+    leading_pos = header_end
+    closing_pos = outtxt[header_expression.end():].find(" Mulliken charges:")+leading_pos
 
     # Split into separate lines
     lines = outtxt[leading_pos+2:closing_pos].split("\n")[1:]
@@ -144,7 +143,7 @@ def parse_x3(num, header=["Atom Number", "Atom"], raw_loc=OUT_LOC):
             # Adjust starting block
             data_line_start = idx + 1
 
-    return pd.concat(dataframes, axis= 1).dropna(axis=1)
+    return pd.concat(dataframes, axis=1).dropna(axis=1)
 
 
 def parse_x4(num, header=["Val1", "Val2", "Val3"], raw_loc=OUT_LOC):
@@ -627,6 +626,30 @@ def create_x1_matrix(l, max_dims=None, return_dims=False):
         return res, (max_rows, max_cols)
     return res
 
+def create_x3_matrix(l, max_dims=None, return_dims=False):
+    dim_counter, xs = get_dim_stats(l, parse_x3)
+    if max_dims is None:
+        # print dim_counter
+        mx = np.amax(dim_counter, axis=0)
+        max_rows = int(mx[0])
+        max_cols = int(mx[1])
+        print(max_rows, max_cols)
+    else:
+        max_rows = max_dims[0]
+        max_cols = max_dims[1]
+    res = np.zeros(shape=(len(l), max_rows*max_cols))
+    for i in range(len(xs)):
+        ss = xs[i].shape[0]*xs[i].shape[1]
+        if ss >= max_rows*max_cols:
+            res[i] = xs[i].values.flatten()[:max_rows*max_cols]
+        else:
+            res[i, :ss] = xs[i].values.flatten()
+        # for j in range(max_cols):
+        #     res[i,max_rows*j:max_rows*j+xs[i].shape[0]] = xs[i].iloc[:,j].T
+    if return_dims:
+        return res, (max_rows, max_cols)
+    return res
+
 def create_x4_matrix(l, max_dims=None, return_dims=False):
 
     dim_counter, xs = get_dim_stats(l, parse_x4)
@@ -666,21 +689,38 @@ def create_x5_matrix(l, max_dims=None, return_dims=False):
     return res
 
 
-def create_x6_matrix(l, max_dims=None, return_dims=False):
+def create_x6_matrix(l, max_dims=None, return_dims=False, by_min=False):
 
-    dim_counter, xs = get_dim_stats(l, parse_x6)
-    if max_dims is None:
-        # print dim_counter
+    if by_min or max_dims is not None:
+        dim_counter, xs = get_dim_stats(l, parse_x6)
+        if max_dims is None:
+            # print dim_counter
+            # mx = np.median(dim_counter, axis=0)
+            max_rows = int(np.median(dim_counter[0]))
+            max_cols = 6
+            print(max_rows, max_cols)
+        else:
+            max_rows = max_dims[0]
+            max_cols = max_dims[1]
+        res = np.zeros(shape=(len(l), max_rows*max_cols))
+        for i in range(len(xs)):
+            ss = xs[i].shape[0]*xs[i].shape[1]
+            if ss > max_rows*max_cols:
+                res[i] = xs[i].replace(to_replace="************", value=0.0).values.flatten()[:max_rows*max_cols]
+            else:
+                res[i, :ss] = xs[i].replace(to_replace="************", value=0.0).values.flatten()
+
+    else:
+        dim_counter, xs = get_dim_stats(l, parse_x6)
+
         mx = np.amax(dim_counter, axis=0)
         max_rows = int(mx[0])
         max_cols = int(mx[1])
-    else:
-        max_rows = max_dims[0]
-        max_cols = max_dims[1]
-    res = np.zeros(shape=(len(l), max_rows*max_cols))
-    for i in range(len(xs)):
-        for j in range(max_cols):
-            res[i,max_rows*j:max_rows*j+xs[i].shape[0]] = xs[i].replace(to_replace="************", value=0.0).iloc[:,j].T
+        print(max_rows, max_cols)
+        res = np.zeros(shape=(len(l), max_rows*max_cols))
+        for i in range(len(xs)):
+            for j in range(max_cols):
+                res[i,max_rows*j:max_rows*j+xs[i].shape[0]] = xs[i].replace(to_replace="************", value=0.0).iloc[:,j].T
     if return_dims:
         return res, (max_rows, max_cols)
     return res
