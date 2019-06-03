@@ -298,15 +298,20 @@ def bucket(val,cutoffs):
             level +=1
         # print(level)
         return level
-def parse_master_file(raw_loc=EXL_LOC, exclude_keys=EXCLUDE_KEYS):
+def parse_master_file(raw_loc=EXL_LOC, exclude_keys=EXCLUDE_KEYS, handle_repeats=None):
     ''' reads the master Excel file 'X10_X17_WAVE2.xlsx', drops rows where the
     `Key` column is within the list `exclude_keys`, and returns a DataFrame.'''
 
 
     df = pd.read_excel(raw_loc, sheet_name=None)['COMPUTER SCIENTISTS LOOK HERE']
-    cutoffs = [3,9]
-    print(cutoffs)
-    df['Output: logKbucket']=df['Output: logK'].apply(lambda x: bucket(x,cutoffs))
+    # df['Output: logKbucket']=df['Output: logK'].apply(lambda x: bucket(x,cutoffs))
+    if handle_repeats == 'average':
+        filtered = df.groupby('Associated data', as_index=False).mean()
+        for i, row in df.iterrows():
+            fv = filtered[filtered['Associated data'] == row['Associated data']]['Output: logK']
+            if fv.shape[0] > 0:
+                df.at[i,'Output: logK'] = fv
+        return df[~df['Key'].isin(exclude_keys)].drop_duplicates(subset='Associated data').reset_index(drop=True)
     return df[~df['Key'].isin(exclude_keys)].reset_index(drop=True)
 # def parse_x1(num, header=['Center Number', 'Atomic Number', 'Atomic Type', 'X', 'Y', 'Z'], raw_loc=OUT_LOC):
 #     # Extract the Standard Orientation
