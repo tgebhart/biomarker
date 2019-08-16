@@ -4,7 +4,7 @@ Machine learning for biomarker detection data.
 
 ### Requirements:
 
-python 2
+python 3
 pandas
 sklearn
 numpy
